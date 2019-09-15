@@ -35,7 +35,7 @@ ApplicationName = "jenkins"
 ApplicationPort = "8080"
 
 GitHubAccount ="zhongjie526"
-GithubAnsibleURL= "https://github.com/{}/ansible".format(GitHubAccount)
+GithubAnsibleURL = "https://github.com/{}/ansible".format(GitHubAccount)
 
 AnsiblePullCmd = "/usr/local/bin/ansible-pull -U {} {}.yml -i localhost".format(GithubAnsibleURL,ApplicationName)
 
@@ -71,16 +71,10 @@ t.add_resource(ec2.SecurityGroup(
     ],
 ))
 
-# ud = Base64(Join('\n', [
-#     "#!/bin/bash",
-#     "sudo yum install --enablerepo=epel -y nodejs",
-#     "wget http://bit.ly/2vESNuc -O /home/ec2-user/helloworld.js",
-#     "wget http://bit.ly/2vVvT18 -O /etc/init/helloworld.conf",
-#     "sudo start helloworld"
-# ]))
-
-ud = Base64(Join('\n',[
+ud = Base64(Join('\n', [
     "#!/bin/bash",
+    "yum remove -y java",
+    "yum install -y java-1.8.0-openjdk",
     "yum install --enablerepo=epel -y git",
     "pip install ansible",
     AnsiblePullCmd,
@@ -89,12 +83,12 @@ ud = Base64(Join('\n',[
 
 t.add_resource(Role(
     "Role",
-    AssumeRolePolicyDocument= Policy(
+    AssumeRolePolicyDocument=Policy(
         Statement=[
             Statement(
                 Effect=Allow,
                 Action=[AssumeRole],
-                Principal=Principal("Service",["ec2.amazonaws.com"])
+                Principal=Principal("Service", ["ec2.amazonaws.com"])
             )
         ]
     )
