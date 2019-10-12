@@ -12,7 +12,7 @@ from troposphere import (
     Parameter,
     Ref,
     Template,
-    elasticdloadbalancing as elb
+    elasticloadbalancing as elb
 )
 
 from troposphere.iam import (
