@@ -65,7 +65,7 @@ t.add_parameter(Parameter(
 
 t.add_parameter(Parameter(
     "VpcId",
-    Type="AWS::EC2:VPC::Id",
+    Type="AWS::EC2::VPC::Id",
     Description="VPC"
 
 ))
