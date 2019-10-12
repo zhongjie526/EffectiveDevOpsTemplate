@@ -5,7 +5,7 @@
             "Description": "Public IP of our instance.",
             "Value": {
                 "Fn::GetAtt": [
-                    "instance",
+                    "Instance",
                     "PublicIp"
                 ]
             }
@@ -19,7 +19,7 @@
                         "http://",
                         {
                             "Fn::GetAtt": [
-                                "instance",
+                                "Instance",
                                 "PublicDnsName"
                             ]
                         },
@@ -38,6 +38,38 @@
         }
     },
     "Resources": {
+        "Instance": {
+            "Properties": {
+                "IamInstanceProfile": {
+                    "Ref": "InstanceProfile"
+                },
+                "ImageId": "ami-ed838091",
+                "InstanceType": "t2.micro",
+                "KeyName": {
+                    "Ref": "KeyPair"
+                },
+                "SecurityGroups": [
+                    {
+                        "Ref": "SecurityGroup"
+                    }
+                ],
+                "UserData": {
+                    "Fn::Base64": {
+                        "Fn::Join": [
+                            "\n",
+                            [
+                                "#!/bin/bash",
+                                "yum update -y",
+                                "yum install -y docker",
+                                "service docker start",
+                                "usermod -a -G docker ec2-user"
+                            ]
+                        ]
+                    }
+                }
+            },
+            "Type": "AWS::EC2::Instance"
+        },
         "InstanceProfile": {
             "Properties": {
                 "Path": "/",
@@ -98,7 +130,7 @@
                 "GroupDescription": "Allow SSH and TCP/8080 access",
                 "SecurityGroupIngress": [
                     {
-                        "CidrIp": "0.0.0.0/0",
+                        "CidrIp": "103.252.200.224/32",
                         "FromPort": "22",
                         "IpProtocol": "tcp",
                         "ToPort": "22"
@@ -108,47 +140,46 @@
                         "FromPort": "8080",
                         "IpProtocol": "tcp",
                         "ToPort": "8080"
+                    },
+                    {
+                        "CidrIp": "0.0.0.0/0",
+                        "FromPort": "8088",
+                        "IpProtocol": "tcp",
+                        "ToPort": "8088"
+                    },
+                    {
+                        "CidrIp": "0.0.0.0/0",
+                        "FromPort": "9191",
+                        "IpProtocol": "tcp",
+                        "ToPort": "9191"
                     }
                 ]
             },
             "Type": "AWS::EC2::SecurityGroup"
         },
-        "instance": {
+        "Volume": {
             "Properties": {
-                "IamInstanceProfile": {
-                    "Ref": "InstanceProfile"
+                "AvailabilityZone": {
+                    "Fn::GetAtt": [
+                        "Instance",
+                        "AvailabilityZone"
+                    ]
                 },
-                "ImageId": "ami-ed838091",
-                "InstanceType": "t2.micro",
-                "KeyName": {
-                    "Ref": "KeyPair"
+                "Size": "100"
+            },
+            "Type": "AWS::EC2::Volume"
+        },
+        "VolumeAttachment": {
+            "Properties": {
+                "Device": "/dev/sdh",
+                "InstanceId": {
+                    "Ref": "Instance"
                 },
-                "SecurityGroups": [
-                    {
-                        "Ref": "SecurityGroup"
-                    }
-                ],
-                "UserData": {
-                    "Fn::Base64": {
-                        "Fn::Join": [
-                            "\n",
-                            [
-                                "#!/bin/bash",
-                                "yum remove -y java",
-                                "yum install -y java-1.8.0-openjdk",
-                                "yum remove -y nodejs",
-                                "curl -sL https://rpm.nodesource.com/setup_12.x | bash -",
-                                "yum install -y nodejs",
-                                "yum install --enablerepo=epel -y git",
-                                "pip install ansible",
-                                "/usr/local/bin/ansible-pull -U https://github.com/zhongjie526/ansible jenkins.yml -i localhost",
-                                "echo '*/1 * * * * /usr/local/bin/ansible-pull -U https://github.com/zhongjie526/ansible jenkins.yml -i localhost' > /etc/cron.d/ansible-pull"
-                            ]
-                        ]
-                    }
+                "VolumeId": {
+                    "Ref": "Volume"
                 }
             },
-            "Type": "AWS::EC2::Instance"
+            "Type": "AWS::EC2::VolumeAttachment"
         }
     }
 }

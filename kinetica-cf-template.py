@@ -31,7 +31,7 @@ from awacs.aws import (
 from awacs.sts import AssumeRole
 
 
-ApplicationName = "jenkins"
+ApplicationName = "kinetica"
 ApplicationPort = "8080"
 
 GitHubAccount ="zhongjie526"
@@ -68,20 +68,27 @@ t.add_resource(ec2.SecurityGroup(
             ToPort=ApplicationPort,
             CidrIp="0.0.0.0/0",
         ),
+        ec2.SecurityGroupRule(
+            IpProtocol="tcp",
+            FromPort="8088",
+            ToPort="8088",
+            CidrIp="0.0.0.0/0",
+        ),
+        ec2.SecurityGroupRule(
+            IpProtocol="tcp",
+            FromPort="9191",
+            ToPort="9191",
+            CidrIp="0.0.0.0/0",
+        ),
     ],
 ))
 
 ud = Base64(Join('\n', [
     "#!/bin/bash",
-    "yum remove -y java",
-    "yum install -y java-1.8.0-openjdk",
-    "yum remove -y nodejs",
-    "curl -sL https://rpm.nodesource.com/setup_12.x | bash -",
-    "yum install -y nodejs",
-    "yum install --enablerepo=epel -y git",
-    "pip install ansible",
-    AnsiblePullCmd,
-    "echo '*/1 * * * * {}' > /etc/cron.d/ansible-pull".format(AnsiblePullCmd)
+    "yum update -y",
+    "yum install -y docker",
+    "service docker start",
+    "usermod -a -G docker ec2-user",
     ]))
 
 t.add_resource(Role(
@@ -118,8 +125,9 @@ t.add_resource(InstanceProfile(
     Roles=[Ref("Role")]
 ))
 
+
 t.add_resource(ec2.Instance(
-    "instance",
+    "Instance",
     ImageId="ami-ed838091",
     InstanceType="t2.micro",
     SecurityGroups=[Ref("SecurityGroup")],
@@ -128,17 +136,32 @@ t.add_resource(ec2.Instance(
     IamInstanceProfile=Ref("InstanceProfile"),
 ))
 
+t.add_resource(ec2.Volume(
+    "Volume",
+    Size="100",
+    AvailabilityZone=GetAtt("Instance","AvailabilityZone")
+))
+
+
+t.add_resource(ec2.VolumeAttachment(
+    "VolumeAttachment",
+    InstanceId=Ref("Instance"),
+    VolumeId=Ref("Volume"),
+    Device="/dev/sdh"
+))
+
+
 t.add_output(Output(
     "InstancePublicIp",
     Description="Public IP of our instance.",
-    Value=GetAtt("instance", "PublicIp"),
+    Value=GetAtt("Instance", "PublicIp"),
 ))
 
 t.add_output(Output(
     "WebUrl",
     Description="Application endpoint",
     Value=Join("", [
-        "http://", GetAtt("instance", "PublicDnsName"),
+        "http://", GetAtt("Instance", "PublicDnsName"),
         ":", ApplicationPort
     ]),
 ))

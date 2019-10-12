@@ -75,8 +75,6 @@ ud = Base64(Join('\n', [
     "#!/bin/bash",
     "yum remove -y java",
     "yum install -y java-1.8.0-openjdk",
-    "yum remove -y nodejs",
-    "yum install -y nodejs",
     "yum install --enablerepo=epel -y git",
     "pip install ansible",
     AnsiblePullCmd,
